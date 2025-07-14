@@ -2,7 +2,8 @@
 
 یک پنل مدیریت تحت وب قدرتمند و زیبا برای مدیریت سرورهای X-UI (سازگار با V2Ray و Xray) که با یک ربات تلگرامی برای فروش خودکار کانفیگ یکپارچه شده است.
 
-![تصویر پنل](https://user-images.githubusercontent.com/12345/screenshot.png) <!-- لینک تصویر را با یک اسکرین‌شات واقعی از پنل جایگزین کنید -->
+![تصویر پنل اول](https://raw.githubusercontent.com/Nullfill/3x-pannel-and-bot/main/images/screenshot%201.png)
+![تصویر پنل دوم](https://raw.githubusercontent.com/Nullfill/3x-pannel-and-bot/main/images/screenshot%202.png)
 
 ---
 
