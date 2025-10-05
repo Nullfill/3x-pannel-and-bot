@@ -10,9 +10,27 @@ if ($conn->connect_error) {
 }
 
 // دریافت پارامترهای فیلتر
-$start_date = $_GET['start_date'] ?? date('Y-m-01'); // اول ماه جاری
-$end_date = $_GET['end_date'] ?? date('Y-m-d'); // امروز
+$start_date_input = $_GET['start_date'] ?? date('Y-m-01'); // اول ماه جاری
+$end_date_input = $_GET['end_date'] ?? date('Y-m-d'); // امروز
 $filter_type = $_GET['filter_type'] ?? 'all'; // all, income, expense
+
+// اعتبارسنجی تاریخ‌ها برای جلوگیری از SQL Injection
+function validateDate($date) {
+    $d = DateTime::createFromFormat('Y-m-d', $date);
+    return $d && $d->format('Y-m-d') === $date;
+}
+
+// اگر تاریخ‌ها معتبر نبودند، از مقادیر پیش‌فرض استفاده کن
+if (!validateDate($start_date_input)) {
+    $start_date_input = date('Y-m-01');
+}
+if (!validateDate($end_date_input)) {
+    $end_date_input = date('Y-m-d');
+}
+
+// استفاده از Prepared Statement برای امنیت بیشتر
+$start_date = $start_date_input;
+$end_date = $end_date_input . ' 23:59:59';
 
 // دریافت آمار کلی
 $stats = [];
@@ -25,60 +43,82 @@ $stats['total_users'] = $result->fetch_assoc()['total_users'];
 $result = $conn->query("SELECT SUM(balance) as total_balance FROM users");
 $stats['total_balance'] = $result->fetch_assoc()['total_balance'];
 
-// درآمد کل (افزایش موجودی)
-$income_query = "SELECT SUM(amount) as total_income FROM transactions 
-                 WHERE type IN ('admin_add', 'bot_add') 
-                 AND created_at BETWEEN '$start_date' AND '$end_date 23:59:59'";
-$result = $conn->query($income_query);
+// درآمد کل (افزایش موجودی) - با استفاده از Prepared Statement
+$stmt = $conn->prepare("SELECT SUM(amount) as total_income FROM transactions 
+                        WHERE type IN ('admin_add', 'bot_add') 
+                        AND created_at BETWEEN ? AND ?");
+$stmt->bind_param('ss', $start_date, $end_date);
+$stmt->execute();
+$result = $stmt->get_result();
 $stats['total_income'] = $result->fetch_assoc()['total_income'] ?? 0;
+$stmt->close();
 
-// هزینه کل (خرید کانفیگ)
-$expense_query = "SELECT SUM(amount) as total_expense FROM transactions 
-                  WHERE type = 'purchase' 
-                  AND created_at BETWEEN '$start_date' AND '$end_date 23:59:59'";
-$result = $conn->query($expense_query);
+// هزینه کل (خرید کانفیگ) - با استفاده از Prepared Statement
+$stmt = $conn->prepare("SELECT SUM(amount) as total_expense FROM transactions 
+                        WHERE type = 'purchase' 
+                        AND created_at BETWEEN ? AND ?");
+$stmt->bind_param('ss', $start_date, $end_date);
+$stmt->execute();
+$result = $stmt->get_result();
 $stats['total_expense'] = $result->fetch_assoc()['total_expense'] ?? 0;
+$stmt->close();
 
 // سود خالص
 $stats['net_profit'] = $stats['total_income'] - $stats['total_expense'];
 
-// دریافت داده‌های نمودار
+// دریافت داده‌های نمودار - با استفاده از Prepared Statement
 $chart_data = [];
-$date_query = "SELECT DATE(created_at) as date, 
-               SUM(CASE WHEN type IN ('admin_add', 'bot_add') THEN amount ELSE 0 END) as income,
-               SUM(CASE WHEN type = 'purchase' THEN amount ELSE 0 END) as expense
-               FROM transactions 
-               WHERE created_at BETWEEN '$start_date' AND '$end_date 23:59:59'
-               GROUP BY DATE(created_at)
-               ORDER BY date";
-
-$result = $conn->query($date_query);
+$stmt = $conn->prepare("SELECT DATE(created_at) as date, 
+                        SUM(CASE WHEN type IN ('admin_add', 'bot_add') THEN amount ELSE 0 END) as income,
+                        SUM(CASE WHEN type = 'purchase' THEN amount ELSE 0 END) as expense
+                        FROM transactions 
+                        WHERE created_at BETWEEN ? AND ?
+                        GROUP BY DATE(created_at)
+                        ORDER BY date");
+$stmt->bind_param('ss', $start_date, $end_date);
+$stmt->execute();
+$result = $stmt->get_result();
 while ($row = $result->fetch_assoc()) {
     $chart_data[] = $row;
 }
+$stmt->close();
 
-// دریافت تراکنش‌ها با فیلتر
-$transactions_query = "SELECT t.*, u.name as user_name 
-                      FROM transactions t 
-                      JOIN users u ON t.user_id = u.userid 
-                      WHERE t.created_at BETWEEN '$start_date' AND '$end_date 23:59:59'";
+// دریافت تراکنش‌ها با فیلتر - با استفاده از Prepared Statement
+$transactions = [];
 
-if ($filter_type !== 'all') {
-    if ($filter_type === 'income') {
-        $transactions_query .= " AND t.type IN ('admin_add', 'bot_add')";
-    } else {
-        $transactions_query .= " AND t.type = 'purchase'";
-    }
+if ($filter_type === 'income') {
+    $stmt = $conn->prepare("SELECT t.*, u.name as user_name 
+                           FROM transactions t 
+                           JOIN users u ON t.user_id = u.userid 
+                           WHERE t.created_at BETWEEN ? AND ?
+                           AND t.type IN ('admin_add', 'bot_add')
+                           ORDER BY t.created_at DESC");
+    $stmt->bind_param('ss', $start_date, $end_date);
+} elseif ($filter_type === 'expense') {
+    $stmt = $conn->prepare("SELECT t.*, u.name as user_name 
+                           FROM transactions t 
+                           JOIN users u ON t.user_id = u.userid 
+                           WHERE t.created_at BETWEEN ? AND ?
+                           AND t.type = 'purchase'
+                           ORDER BY t.created_at DESC");
+    $stmt->bind_param('ss', $start_date, $end_date);
+} else {
+    $stmt = $conn->prepare("SELECT t.*, u.name as user_name 
+                           FROM transactions t 
+                           JOIN users u ON t.user_id = u.userid 
+                           WHERE t.created_at BETWEEN ? AND ?
+                           ORDER BY t.created_at DESC");
+    $stmt->bind_param('ss', $start_date, $end_date);
 }
 
-$transactions_query .= " ORDER BY t.created_at DESC";
-$result = $conn->query($transactions_query);
-$transactions = [];
+$stmt->execute();
+$result = $stmt->get_result();
 if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $transactions[] = $row;
     }
 }
+$stmt->close();
 ?>
 
 <div class="content-header">
@@ -91,11 +131,11 @@ if ($result && $result->num_rows > 0) {
         <input type="hidden" name="page" value="financial">
         <div class="form-group">
             <label>از تاریخ:</label>
-            <input type="date" name="start_date" value="<?php echo $start_date; ?>">
+            <input type="date" name="start_date" value="<?php echo htmlspecialchars($start_date_input); ?>">
         </div>
         <div class="form-group">
             <label>تا تاریخ:</label>
-            <input type="date" name="end_date" value="<?php echo $end_date; ?>">
+            <input type="date" name="end_date" value="<?php echo htmlspecialchars($end_date_input); ?>">
         </div>
         <div class="form-group">
             <label>نوع:</label>

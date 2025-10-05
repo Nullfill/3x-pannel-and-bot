@@ -1,0 +1,45 @@
+# Configuration files with sensitive data
+config.local.php
+pages/config.local.php
+.env
+.env.local
+
+# Database credentials
+db_credentials.php
+
+# Log files
+*.log
+logs/
+error.log
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*~
+
+# Session files
+sessions/*
+!sessions/.gitkeep
+
+# Vendor directories
+vendor/
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Upload directories (if needed)
+uploads/*
+!uploads/.gitkeep
