@@ -1,9 +1,16 @@
 <?php
 // config.php
-define('TOKEN', 'bottoken');
+// ⚠️ هشدار امنیتی: 
+// - حتماً مقادیر زیر را با اطلاعات واقعی خود جایگزین کنید
+// - این فایل حاوی اطلاعات حساس است و نباید در Git کامیت شود
+// - از فایل config.example.php به عنوان الگو استفاده کنید
+
+// توکن ربات تلگرام (از @BotFather دریافت کنید)
+define('TOKEN', 'bottoken'); // ⚠️ این مقدار را با توکن واقعی ربات خود جایگزین کنید
+
 // تنظیمات دیتابیس
 define('DB_HOST', 'localhost');
-define('DB_USER', 'user'); 
-define('DB_PASS', 'password'); 
-define('DB_NAME', 'dbname');
+define('DB_USER', 'user'); // ⚠️ نام کاربری دیتابیس خود را وارد کنید
+define('DB_PASS', 'password'); // ⚠️ رمز عبور دیتابیس خود را وارد کنید
+define('DB_NAME', 'dbname'); // ⚠️ نام دیتابیس خود را وارد کنید
 ?>

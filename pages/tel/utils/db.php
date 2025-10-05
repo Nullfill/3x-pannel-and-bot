@@ -1,10 +1,13 @@
 <?php
 function getDBConnection() {
-    // Database configuration
-    $host = 'localhost';
-    $username = 'jorabini_user';
-    $password = 'Hamed@141512';
-    $database = 'jorabini_3xui';
+    // Database configuration - استفاده از فایل config برای اطلاعات دیتابیس
+    // توجه: اطلاعات زیر را از فایل config.php خوانده و به صورت hardcode ننویسید
+    require_once __DIR__ . '/../../config.php';
+    
+    $host = DB_HOST;
+    $username = DB_USER;
+    $password = DB_PASS;
+    $database = DB_NAME;
 
     // Create connection
     $conn = new mysqli($host, $username, $password, $database);
