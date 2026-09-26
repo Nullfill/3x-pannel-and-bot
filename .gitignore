@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+*.log
+*.sql.gz
+*.bak
+.DS_Store
+Thumbs.db
+vendor/
+node_modules/
+sessions/*
+!sessions/.gitkeep
