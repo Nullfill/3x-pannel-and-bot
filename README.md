@@ -1,6 +1,6 @@
 # پنل مدیریت 3x-UI با ربات تلگرام
 
-یک پنل مدیریت تحت وب برای مدیریت چند سرور X-UI (سازگار با V2Ray/Xray) همراه با ربات تلگرام برای فروش و مدیریت سرویس‌ها.
+یک پنل وب برای مدیریت چند سرور X-UI همراه با ربات تلگرام برای مدیریت کاربران، سرویس‌ها و فروش کانفیگ. این پروژه را به‌عنوان ابزار شخصی/قابل توسعه برای کار با Xray و چند سرور نگه می‌دارم.
 
 ![تصویر پنل اول](https://raw.githubusercontent.com/Nullfill/3x-pannel-and-bot/main/images/screenshot%201.png)
 ![تصویر پنل دوم](https://raw.githubusercontent.com/Nullfill/3x-pannel-and-bot/main/images/screenshot%202.png)
