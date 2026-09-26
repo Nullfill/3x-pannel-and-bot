@@ -1,26 +1,32 @@
 <?php
-$db_host = 'localhost';
-$db_name = 'dbname';
-$db_user = 'dbuser';
-$db_pass = 'password';
+require_once __DIR__ . '/../pages/config.php';
+
+$db_host = DB_HOST;
+$db_name = DB_NAME;
+$db_user = DB_USER;
+$db_pass = DB_PASS;
+
+if ($db_name === '' || $db_user === '') {
+    die('Database configuration is missing. Set DB_NAME and DB_USER environment variables.');
+}
+if (!preg_match('/^[A-Za-z0-9_]+$/', $db_name)) {
+    die('DB_NAME contains unsupported characters.');
+}
 
 try {
     $pdo = new PDO("mysql:host=$db_host;charset=utf8mb4", $db_user, $db_pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Create database if not exists
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS $db_name");
-    $pdo->exec("USE $db_name");
-    
-    // Create panel_admins table if not exists
+
+    $pdo->exec("CREATE DATABASE IF NOT EXISTS " . $db_name);
+    $pdo->exec("USE " . $db_name);
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS panel_admins (
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(50) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
-    
-    // Create users table if not exists
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
         userid INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(50) NOT NULL UNIQUE,
@@ -28,8 +34,7 @@ try {
         email VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
-    
-    // Create products table if not exists
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS products (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
@@ -39,8 +44,7 @@ try {
         days_count INT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
-    
-    // Create transactions table if not exists
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS transactions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT,
@@ -52,17 +56,20 @@ try {
         FOREIGN KEY (user_id) REFERENCES users(userid) ON DELETE SET NULL,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
     )");
-    
-    // Check if admin user exists, if not create it
+
     $stmt = $pdo->prepare("SELECT id FROM panel_admins WHERE username = ?");
     $stmt->execute(['admin']);
     if (!$stmt->fetch()) {
-        $hashed_password = password_hash('141512', PASSWORD_DEFAULT);
+        $initial_admin_password = getenv('PANEL_ADMIN_PASSWORD') ?: '';
+        if ($initial_admin_password === '') {
+            die('PANEL_ADMIN_PASSWORD must be set before first run.');
+        }
+        $hashed_password = password_hash($initial_admin_password, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("INSERT INTO panel_admins (username, password) VALUES (?, ?)");
         $stmt->execute(['admin', $hashed_password]);
     }
-    
-} catch(PDOException $e) {
-    die("Connection failed: " . $e->getMessage());
+
+} catch (PDOException $e) {
+    error_log('Database initialization failed: ' . $e->getMessage());
+    die('Database initialization failed. Check server logs for details.');
 }
-// End of db.php
